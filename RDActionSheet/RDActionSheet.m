@@ -13,6 +13,7 @@
 @interface RDActionSheet ()
 
 @property (nonatomic, strong) UIView *blackOutView;
+@property (nonatomic, strong) UIScrollView *content;
 @property (nonatomic, strong) UILabel *titleLabel;
 @property int primaryButtonIndex;
 @property int cancelButtonIndex;
@@ -56,7 +57,7 @@ const CGFloat kBlackoutViewFadeInOpacity = 0.6;
 
 #pragma mark - Initialization
 
-- (id)init { 
+- (id)init {
     self = [super init];
     if (self) {
         self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
@@ -70,10 +71,14 @@ const CGFloat kBlackoutViewFadeInOpacity = 0.6;
 - (id)initWithCancelButtonTitle:(NSString *)cancelButtonTitle
              primaryButtonTitle:(NSString *)primaryButtonTitle
          destructiveButtonTitle:(NSString *)destructiveButtonTitle
-              otherButtonTitleArray:(NSArray*)otherButtonsArray {
+          otherButtonTitleArray:(NSArray*)otherButtonsArray {
     
     self = [self init];
     if (self) {
+        
+        self.content = [[UIScrollView alloc] init];
+        self.content.bounces = NO;
+        
         self.cancelButtonIndex = self.primaryButtonIndex = self.destructiveButtonIndex = -1;
         
         // Build cancel button
@@ -117,7 +122,7 @@ otherButtonTitleArray:(NSArray*)otherButtonsArray
 }
 
 - (id)initWithCancelButtonTitle:(NSString *)cancelButtonTitle primaryButtonTitle:(NSString *)primaryButtonTitle destructiveButtonTitle:(NSString *)destructiveButtonTitle firstOtherButtonTitle:(NSString *)firstOtherButtonTitle otherButtonTitlesList:(va_list)otherButtonsList {
-
+    
     NSMutableArray * array = [NSMutableArray arrayWithCapacity:10];
     
     // Build normal buttons
@@ -154,7 +159,6 @@ otherButtonTitleArray:(NSArray*)otherButtonsArray
 #pragma mark - View setup
 
 - (void)layoutSubviews {
-    
     [self setupBackground];
     [self setupTitle];
     [self setupButtons];
@@ -164,19 +168,19 @@ otherButtonTitleArray:(NSArray*)otherButtonsArray
     
     UIImage *backgroundImage = [[UIImage imageNamed:@"SheetBackground.png"] stretchableImageWithLeftCapWidth:0.5 topCapHeight:0];
     
-    UIGraphicsBeginImageContextWithOptions(CGSizeMake(self.frame.size.width, self.frame.size.height), YES, 0);
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(self.frame.size.width, [self calculateSheetHeight]), YES, 0);
     CGContextRef con = UIGraphicsGetCurrentContext();
     
     // Fill the context
     UIColor *fillColor = [UIColor colorWithRed:18/255.0 green:18/255.0 blue:18/255.0 alpha:1];
     CGContextSetFillColorWithColor(con, fillColor.CGColor);
-    CGContextFillRect(con, CGRectMake(0, 0, self.frame.size.width, self.frame.size.height));
+    CGContextFillRect(con, CGRectMake(0, 0, self.frame.size.width, [self calculateSheetHeight]));
     
     // Draw gradient
     [backgroundImage drawInRect:CGRectMake(0, 0, self.frame.size.width, backgroundImage.size.height)];
     
     // Draw Line
-    CGFloat lineYAxis = self.frame.size.height - (kButtonPadding * 2 + kButtonHeight);
+    CGFloat lineYAxis = [self calculateSheetHeight] - (kButtonPadding * 2 + kButtonHeight);
     
     CGContextBeginPath(con);
     CGContextSetStrokeColorWithColor(con, [UIColor blackColor].CGColor);
@@ -198,12 +202,24 @@ otherButtonTitleArray:(NSArray*)otherButtonsArray
     
     UIImageView *background = [[UIImageView alloc] initWithImage:finishedBackground];
     background.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-    [self insertSubview:background atIndex:0];
+    [self.content insertSubview:background atIndex:0];
 }
 
 - (void)setupButtons {
     
+    self.content.frame = self.bounds;
+    [self addSubview:self.content];
+    
     CGFloat yOffset = self.frame.size.height - kButtonPadding - floorf(kButtonHeight/2);
+    
+    CGFloat estimatedHeight = [self calculateSheetHeight];
+    
+    CGSize scrollsize = self.bounds.size;
+    if (estimatedHeight > self.frame.size.height) {
+        yOffset = estimatedHeight - kButtonPadding - floorf(kButtonHeight/2);
+        scrollsize.height = estimatedHeight;
+    }
+    self.content.contentSize = scrollsize;
     
     BOOL cancelButton = YES;
     for (UIButton *button in self.buttons) {
@@ -212,14 +228,14 @@ otherButtonTitleArray:(NSArray*)otherButtonsArray
         UIDeviceOrientation orientation = [UIDevice currentDevice].orientation;
         if (orientation == UIDeviceOrientationLandscapeLeft || orientation == UIDeviceOrientationLandscapeRight) {
             buttonWidth = kLandscapeButtonWidth;
-        } 
+        }
         else {
             buttonWidth = kPortraitButtonWidth;
         }
         
         button.frame = CGRectMake(0, 0, buttonWidth, kButtonHeight);
         button.center = CGPointMake(self.center.x, yOffset);
-        [self addSubview:button];
+        [self.content addSubview:button];
         
         yOffset -= button.frame.size.height + kButtonPadding;
         
@@ -244,7 +260,7 @@ otherButtonTitleArray:(NSArray*)otherButtonsArray
     
     self.titleLabel.frame = CGRectMake((self.bounds.size.width - labelWidth) / 2, self.titleLabel.frame.origin.y, labelWidth, self.titleLabel.bounds.size.height);
     
-    [self addSubview:self.titleLabel];
+    [self.content addSubview:self.titleLabel];
 }
 
 #pragma mark - Blackout view builder
@@ -257,6 +273,9 @@ otherButtonTitleArray:(NSArray*)otherButtonsArray
     view.opaque = YES;
     view.alpha = 0;
     
+    view.userInteractionEnabled = YES;
+    [view addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(cancelActionSheet)]];
+    
     return view;
 }
 
@@ -265,8 +284,8 @@ otherButtonTitleArray:(NSArray*)otherButtonsArray
 - (UILabel *)buildTitleLabelWithTitle:(NSString *)title {
     
     CGSize newSize = [title sizeWithFont:[UIFont systemFontOfSize:13.0]
-                            constrainedToSize:CGSizeMake(300.0, NSIntegerMax)
-                                lineBreakMode:NSLineBreakByWordWrapping];
+                       constrainedToSize:CGSizeMake(300.0, NSIntegerMax)
+                           lineBreakMode:NSLineBreakByWordWrapping];
     
     UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(10.0, 9.0, kPortraitButtonWidth, newSize.height + 5.0)];
     label.backgroundColor = [UIColor clearColor];
@@ -414,11 +433,21 @@ otherButtonTitleArray:(NSArray*)otherButtonsArray
 #pragma mark - Present action sheet
 
 - (void)showFrom:(UIView *)view {
-        
+    
     CGFloat startPosition = view.bounds.origin.y + view.bounds.size.height;
-    self.frame = CGRectMake(0, startPosition, view.bounds.size.width, [self calculateSheetHeight]);
+    CGFloat max = view.bounds.size.height;
+    
+    // A system version of 3.1 or greater is required to use CADisplayLink. The NSTimer
+    // class is used as fallback when it isn't available.
+    NSString *reqSysVer = @"7.0";
+    NSString *currSysVer = [[UIDevice currentDevice] systemVersion];
+    if ([currSysVer compare:reqSysVer options:NSNumericSearch] != NSOrderedDescending) {
+        max -= 20;
+    }
+    
+    self.frame = CGRectMake(0, startPosition, view.bounds.size.width, fminf(max, [self calculateSheetHeight]));
     [view addSubview:self];
-        
+    
     self.blackOutView = [self buildBlackOutViewWithFrame:view.bounds];
     [view insertSubview:self.blackOutView belowSubview:self];
     
@@ -433,7 +462,7 @@ otherButtonTitleArray:(NSArray*)otherButtonsArray
     
     [UIView animateWithDuration:kActionSheetAnimationTime
                      animations:^{
-                         CGFloat endPosition = startPosition - self.frame.size.height;
+                         CGFloat endPosition = fmaxf(startPosition - self.frame.size.height, 0);
                          self.frame = CGRectMake(self.frame.origin.x, endPosition, self.frame.size.width, self.frame.size.height);
                          self.blackOutView.alpha = kBlackoutViewFadeInOpacity;
                      }

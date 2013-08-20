@@ -41,16 +41,9 @@ typedef void(^RDActionSheetCallbackBlock)(RDActionSheetCallbackType result, NSIn
 
 - (NSString *)buttonTitleAtIndex:(NSInteger)buttonIndex;
 
-- (id)initWithTitle:(NSString *)title
-  cancelButtonTitle:(NSString *)cancelButtonTitle
- primaryButtonTitle:(NSString *)primaryButtonTitle
-destructiveButtonTitle:(NSString *)destructiveButtonTitle
-otherButtonTitleArray:(NSArray*)otherButtonsArray;
+- (id)initWithTitle:(NSString *)title cancelButtonTitle:(NSString *)cancelButtonTitle primaryButtonTitle:(NSString *)primaryButtonTitle destructiveButtonTitle:(NSString *)destructiveButtonTitle otherButtonTitleArray:(NSArray*)otherButtonsArray;
 
-- (id)initWithCancelButtonTitle:(NSString *)cancelButtonTitle
-             primaryButtonTitle:(NSString *)primaryButtonTitle
-         destructiveButtonTitle:(NSString *)destructiveButtonTitle
-          otherButtonTitleArray:(NSArray*)otherButtonsArray;
+- (id)initWithCancelButtonTitle:(NSString *)cancelButtonTitle primaryButtonTitle:(NSString *)primaryButtonTitle destructiveButtonTitle:(NSString *)destructiveButtonTitle otherButtonTitleArray:(NSArray*)otherButtonsArray;
 
 - (id)initWithCancelButtonTitle:(NSString *)cancelButtonTitle primaryButtonTitle:(NSString *)primaryButtonTitle destructiveButtonTitle:(NSString *)destructiveButtonTitle otherButtonTitles:(NSString *)otherButtonTitles, ...;
 
