@@ -35,7 +35,22 @@ typedef void(^RDActionSheetCallbackBlock)(RDActionSheetCallbackType result, NSIn
 @property (weak, nonatomic) id <RDActionSheetDelegate> delegate;
 @property (copy, nonatomic) RDActionSheetCallbackBlock callbackBlock;
 
+@property (readonly) int primaryButtonIndex;
+@property (readonly) int cancelButtonIndex;
+@property (readonly) int destructiveButtonIndex;
+
 - (NSString *)buttonTitleAtIndex:(NSInteger)buttonIndex;
+
+- (id)initWithTitle:(NSString *)title
+  cancelButtonTitle:(NSString *)cancelButtonTitle
+ primaryButtonTitle:(NSString *)primaryButtonTitle
+destructiveButtonTitle:(NSString *)destructiveButtonTitle
+otherButtonTitleArray:(NSArray*)otherButtonsArray;
+
+- (id)initWithCancelButtonTitle:(NSString *)cancelButtonTitle
+             primaryButtonTitle:(NSString *)primaryButtonTitle
+         destructiveButtonTitle:(NSString *)destructiveButtonTitle
+          otherButtonTitleArray:(NSArray*)otherButtonsArray;
 
 - (id)initWithCancelButtonTitle:(NSString *)cancelButtonTitle primaryButtonTitle:(NSString *)primaryButtonTitle destructiveButtonTitle:(NSString *)destructiveButtonTitle otherButtonTitles:(NSString *)otherButtonTitles, ...;
 

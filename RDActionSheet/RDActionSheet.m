@@ -14,6 +14,9 @@
 
 @property (nonatomic, strong) UIView *blackOutView;
 @property (nonatomic, strong) UILabel *titleLabel;
+@property int primaryButtonIndex;
+@property int cancelButtonIndex;
+@property int destructiveButtonIndex;
 
 - (id)initWithCancelButtonTitle:(NSString *)cancelButtonTitle primaryButtonTitle:(NSString *)primaryButtonTitle destructiveButtonTitle:(NSString *)destructiveButtonTitle firstOtherButtonTitle:(NSString *)firstOtherButtonTitle otherButtonTitlesList:(va_list)otherButtonsList;
 
@@ -64,41 +67,67 @@ const CGFloat kBlackoutViewFadeInOpacity = 0.6;
     return self;
 }
 
-- (id)initWithCancelButtonTitle:(NSString *)cancelButtonTitle primaryButtonTitle:(NSString *)primaryButtonTitle destructiveButtonTitle:(NSString *)destructiveButtonTitle firstOtherButtonTitle:(NSString *)firstOtherButtonTitle otherButtonTitlesList:(va_list)otherButtonsList {
+- (id)initWithCancelButtonTitle:(NSString *)cancelButtonTitle
+             primaryButtonTitle:(NSString *)primaryButtonTitle
+         destructiveButtonTitle:(NSString *)destructiveButtonTitle
+              otherButtonTitleArray:(NSArray*)otherButtonsArray {
     
     self = [self init];
     if (self) {
+        self.cancelButtonIndex = self.primaryButtonIndex = self.destructiveButtonIndex = -1;
         
-        // Build normal buttons
-        NSString *argString = firstOtherButtonTitle;
-        while (argString != nil) {
-            
-            UIButton *button = [self buildButtonWithTitle:argString];
-            [self.buttons addObject:button];
-            
-            argString = va_arg(otherButtonsList, NSString *);
-        }
-                
         // Build cancel button
         UIButton *cancelButton = [self buildCancelButtonWithTitle:cancelButtonTitle];
-        [self.buttons insertObject:cancelButton atIndex:0];
-        
-        // Add primary button
-        if (primaryButtonTitle) {
-            UIButton *primaryButton = [self buildPrimaryButtonWithTitle:primaryButtonTitle];
-            [self.buttons addObject:primaryButton];
-        }
+        [self.buttons insertObject:cancelButton atIndex:self.cancelButtonIndex = 0];
         
         // Add destroy button
         if (destructiveButtonTitle) {
             UIButton *destroyButton = [self buildDestroyButtonWithTitle:destructiveButtonTitle];
-            [self.buttons insertObject:destroyButton atIndex:1];
+            [self.buttons insertObject:destroyButton atIndex:self.destructiveButtonIndex = 1];
+        }
+        
+        // Build normal buttons
+        for (NSString * string in otherButtonsArray) {
+            UIButton *button = [self buildButtonWithTitle:string];
+            [self.buttons addObject:button];
+        }
+        
+        // Add primary button
+        if (primaryButtonTitle) {
+            UIButton *primaryButton = [self buildPrimaryButtonWithTitle:primaryButtonTitle];
+            self.primaryButtonIndex = self.buttons.count;
+            [self.buttons addObject:primaryButton];
         }
     }
     
     return self;
 }
 
+- (id)initWithTitle:(NSString *)title
+  cancelButtonTitle:(NSString *)cancelButtonTitle
+ primaryButtonTitle:(NSString *)primaryButtonTitle
+destructiveButtonTitle:(NSString *)destructiveButtonTitle
+otherButtonTitleArray:(NSArray*)otherButtonsArray
+{
+    if (self = [self initWithCancelButtonTitle:cancelButtonTitle primaryButtonTitle:primaryButtonTitle destructiveButtonTitle:destructiveButtonTitle otherButtonTitleArray:otherButtonsArray]) {
+        if (title)
+            self.titleLabel = [self buildTitleLabelWithTitle:title];
+    }
+    return self;
+}
+
+- (id)initWithCancelButtonTitle:(NSString *)cancelButtonTitle primaryButtonTitle:(NSString *)primaryButtonTitle destructiveButtonTitle:(NSString *)destructiveButtonTitle firstOtherButtonTitle:(NSString *)firstOtherButtonTitle otherButtonTitlesList:(va_list)otherButtonsList {
+
+    NSMutableArray * array = [NSMutableArray arrayWithCapacity:10];
+    
+    // Build normal buttons
+    NSString *argString = firstOtherButtonTitle;
+    while (argString != nil) {
+        [array addObject:argString];
+        argString = va_arg(otherButtonsList, NSString *);
+    }
+    return [self initWithCancelButtonTitle:cancelButtonTitle primaryButtonTitle:primaryButtonTitle destructiveButtonTitle:destructiveButtonTitle otherButtonTitleArray:array];
+}
 - (id)initWithCancelButtonTitle:(NSString *)cancelButtonTitle primaryButtonTitle:(NSString *)primaryButtonTitle destructiveButtonTitle:(NSString *)destructiveButtonTitle otherButtonTitles:(NSString *)otherButtonTitles, ... {
     
     va_list args;
